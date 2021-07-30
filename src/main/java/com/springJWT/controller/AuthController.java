@@ -6,13 +6,17 @@ import com.springJWT.model.KisiRole;
 import com.springJWT.repository.KisiRepository;
 import com.springJWT.repository.RoleRepository;
 import com.springJWT.request_response.LoginRequest;
+import com.springJWT.request_response.LoginResponse;
 import com.springJWT.request_response.MesajResponse;
 import com.springJWT.request_response.RegisterRequest;
+import com.springJWT.security.jwt.JwtUtils;
+import com.springJWT.service.KisiServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,7 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -38,13 +44,28 @@ public class AuthController {
     @Autowired
     AuthenticationManager authenticationManager;
 
+    @Autowired
+    JwtUtils jwtUtil;
+
     @PostMapping("/login")
     public ResponseEntity<?> girisYap(@RequestBody LoginRequest loginRequest){
         //Kimlik denetiminin yapılması
        Authentication authentication = authenticationManager
                .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
-        return null;
+       //Kisiye göre JWT oluşturulması ve Security Context'in güncellenmesi
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtil.jwtOlustur(authentication);
+
+       //Kimlik denetimi yapılan kişi bilgilerinin Service katmanından alınması
+        KisiServiceImpl loginKisi = (KisiServiceImpl) authentication.getPrincipal();
+
+        //login olan kişinin Rollerinin elde edilmesi
+        List<String> roller = loginKisi.getAuthorities().stream().map(item -> item.getAuthority()).collect(Collectors.toList());
+
+        return ResponseEntity.ok(new LoginResponse(
+                loginKisi.getId(), loginKisi.getUsername(),loginKisi.getEmail(),roller
+        ));
     }
 
 
