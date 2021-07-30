@@ -21,16 +21,16 @@ public class JwtUtils {
     public String jwtOlustur(Authentication authentication){
         KisiServiceImpl kisiBilgiler = (KisiServiceImpl) authentication.getPrincipal();
 
-        return Jwts.builder()
-                .setSubject(kisiBilgiler.getUsername())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(new Date().getTime()+ jwtExpirationMs))
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)
-                .compact();
+        return Jwts.builder().
+                setSubject(kisiBilgiler.getUsername()).
+                setIssuedAt(new Date()).
+                setExpiration(new Date((new Date()).getTime() + jwtExpirationMs)).
+                signWith(SignatureAlgorithm.HS512, jwtSecret).
+                compact();
     }
 
-    public String usernameVePasswordAl(String token){
-        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJwt(token).getBody().getSubject();
+    public String usernameAl(String token){
+        return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
     }
 
     public boolean JwtTokenGecerle(String authToken){
